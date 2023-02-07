@@ -215,9 +215,11 @@ static inline void score_moves(S_Board* pos, Search_data* sd, Search_stack* ss, 
 //Calculate a futility margin based on depth and if the search is improving or not
 int futility(int depth, bool improving) { return 66 * (depth - improving); }
 
+#define pvDistBias 4
+#define pvDistDiv 3
 //Calculate a reduction margin based on the search depth and the number of moves played
-static inline int reduction(bool pv_node, bool improving, int depth, int num_moves) {
-	return  reductions[depth] * reductions[num_moves] + !improving + !pv_node;
+static inline int reduction(bool pv_node, bool improving, int depth, int num_moves, int pvDistance) {
+	return  reductions[depth] * reductions[num_moves] + !improving + !pv_node - ((pvDistance - pvDistBias) / pvDistDiv);
 }
 
 int getBestMove(const PvTable* pv_table) {
@@ -308,7 +310,7 @@ int aspiration_window_search(int prev_eval, int depth, S_ThreadData* td) {
 	//Stay at current depth if we fail high/low because of the aspiration windows
 	while (true) {
 
-		score = negamax(alpha, beta, depth, td, ss);
+		score = negamax(alpha, beta, depth, td, ss, 0);
 
 		// check if more than Maxtime passed and we have to stop
 		if (td->id == 0 && timeOver(&td->info)) {
@@ -336,7 +338,7 @@ int aspiration_window_search(int prev_eval, int depth, S_ThreadData* td) {
 }
 
 // negamax alpha beta search
-int negamax(int alpha, int beta, int depth, S_ThreadData* td, Search_stack* ss) {
+int negamax(int alpha, int beta, int depth, S_ThreadData* td, Search_stack* ss, int pvDistance = 0) {
 
 	//Extract data structures from ThreadData
 	S_Board* pos = &td->pos;
@@ -451,7 +453,7 @@ int negamax(int alpha, int beta, int depth, S_ThreadData* td, Search_stack* ss) 
 			int R = 3 + depth / 3 + std::min((eval - beta) / 200, 3);
 			/* search moves with reduced depth to find beta cutoffs
 			   depth - 1 - R where R is a reduction limit */
-			Score = -negamax(-beta, -beta + 1, depth - R, td, ss + 1);
+			Score = -negamax(-beta, -beta + 1, depth - R, td, ss + 1, pvDistance);
 
 			TakeNullMove(pos);
 
@@ -546,7 +548,7 @@ moves_loop:
 			int singularDepth = (depth - 1) / 2;
 
 			ss->excludedMove = tte.move;
-			int singularScore = negamax(singularBeta - 1, singularBeta, singularDepth, td, ss);
+			int singularScore = negamax(singularBeta - 1, singularBeta, singularDepth, td, ss, pvDistance);
 			ss->excludedMove = NOMOVE;
 
 			if (singularScore < singularBeta)
@@ -575,11 +577,11 @@ moves_loop:
 			&& IsQuiet(move))
 		{
 			//calculate by how much we should reduce the search depth 
-			depth_reduction = reduction(pv_node, improving, depth, moves_searched);
+			depth_reduction = reduction(pv_node, improving, depth, moves_searched, pvDistance);
 			//adjust the reduction so that we can't drop into Qsearch and to prevent extensions
 			depth_reduction = std::min(depth - 1, std::max(depth_reduction, 1));
 			// search current move with reduced depth:
-			Score = -negamax(-alpha - 1, -alpha, newDepth - depth_reduction, td, ss + 1);
+			Score = -negamax(-alpha - 1, -alpha, newDepth - depth_reduction, td, ss + 1, pvDistance + 1);
 			//if we failed high on a reduced node we'll search with a reduced window and full depth
 			do_full_search = Score > alpha && depth_reduction != 1;
 		}
@@ -589,11 +591,11 @@ moves_loop:
 		}
 		//Search every move (excluding the first of every node) that skipped or failed LMR with full depth but a reduced window
 		if (do_full_search)
-			Score = -negamax(-alpha - 1, -alpha, newDepth - 1, td, ss + 1);
+			Score = -negamax(-alpha - 1, -alpha, newDepth - 1, td, ss + 1, pvDistance + 1);
 
 		// PVS Search: Search the first move and every move that is within bounds with full depth and a full window
 		if (pv_node && (moves_searched == 0 || (Score > alpha && Score < beta)))
-			Score = -negamax(-beta, -alpha, newDepth - 1, td, ss + 1);
+			Score = -negamax(-beta, -alpha, newDepth - 1, td, ss + 1, pvDistance);
 
 		// take move back
 		Unmake_move(move, pos);
@@ -778,4 +780,3 @@ int Quiescence(int alpha, int beta, S_ThreadData* td, Search_stack* ss) {
 	// node (move) fails low
 	return BestScore;
 }
-
