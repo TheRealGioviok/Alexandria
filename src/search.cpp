@@ -215,8 +215,8 @@ static inline void score_moves(S_Board* pos, Search_data* sd, Search_stack* ss, 
 //Calculate a futility margin based on depth and if the search is improving or not
 int futility(int depth, bool improving) { return 66 * (depth - improving); }
 
-#define pvDistBias 3
-#define pvDistDiv 4
+#define pvDistBias 2
+#define pvDistDiv 5
 //Calculate a reduction margin based on the search depth and the number of moves played
 static inline int reduction(bool pv_node, bool improving, int depth, int num_moves, int pvDistance) {
 	return  reductions[depth] * reductions[num_moves] + !improving + !pv_node - ((pvDistance - pvDistBias) / pvDistDiv);
@@ -338,7 +338,6 @@ int AspirationWindowSearch(int prev_eval, int depth, S_ThreadData* td) {
 
 // Negamax alpha beta search
 int Negamax(int alpha, int beta, int depth, S_ThreadData* td, Search_stack* ss, int pvDistance = 0) {
-
 
 	//Extract data structures from ThreadData
 	S_Board* pos = &td->pos;
