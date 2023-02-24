@@ -4,10 +4,13 @@
 #include "misc.h"
 
 //Calculate how much time to spend on searching a move
-void optimum(S_SearchINFO* info, int time, int inc) {
+void Optimum(S_SearchINFO* info, int time, int inc) {
 
 	//if we recieved a movetime command we need to spend exactly that amount of time on the move, so we don't scale
-	if (info->movetimeset) {
+	if (info->movetimeset) 
+	{
+		int safety_overhead = 50;
+		time -= safety_overhead;
 		info->stoptimeMax = info->starttime + time;
 		info->stoptimeOpt = info->starttime + time;
 	}
@@ -40,7 +43,7 @@ void optimum(S_SearchINFO* info, int time, int inc) {
 
 }
 
-bool stopEarly(const S_SearchINFO* info) 
+bool StopEarly(const S_SearchINFO* info) 
 {
 	// check if we used all the nodes/movetime we had or if we used more than our lowerbound of time
 	if ((info->timeset || info->movetimeset) && GetTimeMs() > info->stoptimeOpt)
@@ -48,14 +51,14 @@ bool stopEarly(const S_SearchINFO* info)
 	else return false;
 }
 
-bool nodesOver(const S_SearchINFO* info) {
+bool NodesOver(const S_SearchINFO* info) {
 	// check if we used all the nodes/movetime we had or if we used more than our lowerbound of time
 	if (info->nodeset == TRUE && info->nodes > info->nodeslimit)
 		return true;
 	else return false;
 }
 
-bool timeOver(const S_SearchINFO* info) {
+bool TimeOver(const S_SearchINFO* info) {
 	// check if more than Maxtime passed and we have to stop
 	if (((info->timeset || info->movetimeset)
 		&& ((info->nodes & 1023) == 1023)
