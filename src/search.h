@@ -28,13 +28,13 @@ typedef struct ThreadData {
 void ClearForSearch(S_ThreadData* td);
 
 //Starts the search process, this is ideally the point where you can start a multithreaded search
-void Root_search_position(int depth, S_ThreadData* td, S_UciOptions* options);
-// search_position is the actual function that handles the search, it sets up the variables needed for the search , calls the negamax function and handles the console output
-void search_position(int start_depth, int final_depth, S_ThreadData* td, S_UciOptions* options);
-//Sets up aspiration windows and starts a negamax search
-int aspiration_window_search(int prev_eval, int depth, S_ThreadData* td);
-// negamax alpha beta search
-int negamax(int alpha, int beta, int depth, S_ThreadData* td, Search_stack* ss, int pvDistance);
+void RootSearch(int depth, S_ThreadData* td, S_UciOptions* options);
+// SearchPosition is the actual function that handles the search, it sets up the variables needed for the search , calls the Negamax function and handles the console output
+void SearchPosition(int start_depth, int final_depth, S_ThreadData* td, S_UciOptions* options);
+//Sets up aspiration windows and starts a Negamax search
+int AspirationWindowSearch(int prev_eval, int depth, S_ThreadData* td);
+// Negamax alpha beta search
+int Negamax(int alpha, int beta, int depth, S_ThreadData* td, Search_stack* ss, int pvDistance);
 //Quiescence search to avoid the horizon effect
 int Quiescence(int alpha, int beta, S_ThreadData* td, Search_stack* ss);
 

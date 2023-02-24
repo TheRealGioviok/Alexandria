@@ -136,7 +136,7 @@ bool SEE(const S_Board* pos, const int move,
 
 		value = -value - 1 - PieceValue[pt];
 
-		// Value beats threshold, or can't beat threshold (negamaxed)
+		// Value beats threshold, or can't beat threshold (Negamaxed)
 		if (value >= 0) {
 
 			if (pt == KING && (attackers & Occupancy(pos, side)))
@@ -309,7 +309,7 @@ int AspirationWindowSearch(int prev_eval, int depth, S_ThreadData* td) {
 
 	//Stay at current depth if we fail high/low because of the aspiration windows
 	while (true) {
-		score = negamax(alpha, beta, depth, td, ss, 0);
+		score = Negamax(alpha, beta, depth, td, ss, 0);
 
 		// check if more than Maxtime passed and we have to stop
 		if (td->id == 0 && TimeOver(&td->info)) {
@@ -336,8 +336,8 @@ int AspirationWindowSearch(int prev_eval, int depth, S_ThreadData* td) {
 	return score;
 }
 
-// negamax alpha beta search
-int negamax(int alpha, int beta, int depth, S_ThreadData* td, Search_stack* ss, int pvDistance = 0) {
+// Negamax alpha beta search
+int Negamax(int alpha, int beta, int depth, S_ThreadData* td, Search_stack* ss, int pvDistance = 0) {
 
 
 	//Extract data structures from ThreadData
@@ -453,7 +453,7 @@ int negamax(int alpha, int beta, int depth, S_ThreadData* td, Search_stack* ss, 
 			int R = 3 + depth / 3 + std::min((eval - beta) / 200, 3);
 			/* search moves with reduced depth to find beta cutoffs
 			   depth - 1 - R where R is a reduction limit */
-			Score = -negamax(-beta, -beta + 1, depth - R, td, ss + 1, pvDistance);
+			Score = -Negamax(-beta, -beta + 1, depth - R, td, ss + 1, pvDistance);
 
 			TakeNullMove(pos);
 
@@ -547,7 +547,7 @@ moves_loop:
 			int singularDepth = (depth - 1) / 2;
 
 			ss->excludedMove = tte.move;
-			int singularScore = negamax(singularBeta - 1, singularBeta, singularDepth, td, ss, pvDistance);
+			int singularScore = Negamax(singularBeta - 1, singularBeta, singularDepth, td, ss, pvDistance);
 
 			ss->excludedMove = NOMOVE;
 
@@ -581,7 +581,7 @@ moves_loop:
 			//adjust the reduction so that we can't drop into Qsearch and to prevent extensions
 			depth_reduction = std::min(depth - 1, std::max(depth_reduction, 1));
 			// search current move with reduced depth:
-			Score = -negamax(-alpha - 1, -alpha, newDepth - depth_reduction, td, ss + 1, pvDistance + 1);
+			Score = -Negamax(-alpha - 1, -alpha, newDepth - depth_reduction, td, ss + 1, pvDistance + 1);
 
 			//if we failed high on a reduced node we'll search with a reduced window and full depth
 			do_full_search = Score > alpha && depth_reduction != 1;
@@ -592,11 +592,11 @@ moves_loop:
 		}
 		//Search every move (excluding the first of every node) that skipped or failed LMR with full depth but a reduced window
 		if (do_full_search)
-			Score = -negamax(-alpha - 1, -alpha, newDepth - 1, td, ss + 1, pvDistance + 1);
+			Score = -Negamax(-alpha - 1, -alpha, newDepth - 1, td, ss + 1, pvDistance + 1);
 
 		// PVS Search: Search the first move and every move that is within bounds with full depth and a full window
 		if (pv_node && (moves_searched == 0 || (Score > alpha && Score < beta)))
-			Score = -negamax(-beta, -alpha, newDepth - 1, td, ss + 1, pvDistance);
+			Score = -Negamax(-beta, -alpha, newDepth - 1, td, ss + 1, pvDistance);
 
 
 		// take move back
